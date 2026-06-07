@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Africa Map Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --sand: #f5e6c8;
+    --sand-dark: #e8d5a3;
+    --parchment: #fdf6e3;
+    --earth: #8b5e3c;
+    --earth-dark: #5c3a1e;
+    --forest: #2d6a4f;
+    --forest-light: #52b788;
+    --gold: #c9a84c;
+    --gold-light: #f4d03f;
+    --coral: #d4572a;
+    --ivory: #fffbf0;
+    --ink: #1a0f00;
+    --muted: #7a6248;
+    --correct: #40916c;
+    --wrong: #c62828;
+    --neutral: #b08968;
+    --hover: #e9c46a;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #1a1208;
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+  }
+
+  .bg-texture {
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 20%, #2a1f0a 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, #0d1a0a 0%, transparent 50%),
+      #1a1208;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 1280px;
+    padding: 1rem;
+    display: flex; flex-direction: column; align-items: center; gap: 1rem;
+  }
+
+  header {
+    text-align: center;
+    padding: 1rem 0 0.5rem;
+  }
+
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 700;
+    color: var(--gold-light);
+    letter-spacing: 0.04em;
+    text-shadow: 0 0 40px rgba(201,168,76,0.4);
+  }
+
+  header p {
+    font-size: 0.85rem;
+    color: var(--sand-dark);
+    opacity: 0.7;
+    margin-top: 0.25rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .main-layout {
+    display: flex;
+    gap: 1.5rem;
+    width: 100%;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .quiz-panel {
+    background: rgba(253,246,227,0.06);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 16px;
+    padding: 1.5rem;
+    width: 280px;
+    min-width: 240px;
+    flex-shrink: 0;
+    backdrop-filter: blur(8px);
+  }
+
+  .score-row {
+    display: flex; gap: 0.75rem; margin-bottom: 1.25rem;
+  }
+
+  .stat-box {
+    flex: 1;
+    background: rgba(201,168,76,0.08);
+    border: 1px solid rgba(201,168,76,0.15);
+    border-radius: 10px;
+    padding: 0.6rem 0.5rem;
+    text-align: center;
+  }
+
+  .stat-box .label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--gold);
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+
+  .stat-box .value {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--sand);
+  }
+
+  .timer-bar-wrap {
+    background: rgba(255,255,255,0.08);
+    border-radius: 4px;
+    height: 5px;
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+  }
+
+  .timer-bar {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--forest-light), var(--gold-light));
+    transition: width 1s linear, background 0.5s;
+  }
+
+  .timer-bar.danger { background: linear-gradient(90deg, #c62828, #ff7043); }
+
+  .question-area {
+    text-align: center;
+    margin-bottom: 1.25rem;
+  }
+
+  .question-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    color: #a08060;
+    margin-bottom: 0.5rem;
+  }
+
+  .country-name {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.3rem, 3vw, 1.8rem);
+    font-weight: 700;
+    color: var(--gold-light);
+    line-height: 1.2;
+    min-height: 2.5rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.2s;
+    text-shadow: 0 0 20px rgba(244,208,63,0.3);
+  }
+
+  .hint-text {
+    font-size: 0.78rem;
+    color: #a08060;
+    margin-top: 0.4rem;
+    min-height: 1.2rem;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .hint-text.show { opacity: 1; }
+
+  .feedback {
+    text-align: center;
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    min-height: 2.4rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s;
+    letter-spacing: 0.02em;
+  }
+
+  .feedback.correct {
+    background: rgba(64,145,108,0.2);
+    color: #74c69d;
+    border: 1px solid rgba(64,145,108,0.3);
+  }
+
+  .feedback.wrong {
+    background: rgba(198,40,40,0.15);
+    color: #ef9a9a;
+    border: 1px solid rgba(198,40,40,0.25);
+  }
+
+  .feedback.idle {
+    background: rgba(255,255,255,0.04);
+    color: #7a6248;
+    border: 1px solid rgba(255,255,255,0.06);
+    font-size: 0.75rem;
+  }
+
+  .btn-row {
+    display: flex; gap: 0.5rem; margin-top: 1rem;
+  }
+
+  .btn {
+    flex: 1; padding: 0.6rem 0.5rem;
+    border: 1px solid rgba(201,168,76,0.3);
+    border-radius: 8px;
+    background: rgba(201,168,76,0.08);
+    color: var(--sand);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.04em;
+  }
+
+  .btn:hover {
+    background: rgba(201,168,76,0.18);
+    border-color: rgba(201,168,76,0.5);
+  }
+
+  .btn.primary {
+    background: rgba(64,145,108,0.2);
+    border-color: rgba(64,145,108,0.4);
+    color: #74c69d;
+  }
+
+  .btn.primary:hover {
+    background: rgba(64,145,108,0.35);
+  }
+
+  .progress-list {
+    margin-top: 1rem;
+    max-height: 200px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(201,168,76,0.2) transparent;
+  }
+
+  .progress-item {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.3rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 0.74rem;
+  }
+
+  .progress-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+
+  .dot-correct { background: var(--correct); }
+  .dot-wrong { background: var(--wrong); }
+  .dot-skip { background: var(--neutral); }
+
+  .map-container {
+    flex: 1;
+    min-width: 320px;
+    max-width: 780px;
+    background: rgba(253,246,227,0.04);
+    border: 1px solid rgba(201,168,76,0.15);
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    backdrop-filter: blur(4px);
+  }
+
+  #africa-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    cursor: default;
+  }
+
+  .country-path {
+    fill: #6b4c2a;
+    stroke: #3a2510;
+    stroke-width: 0.8;
+    cursor: pointer;
+    transition: fill 0.15s;
+  }
+
+  .country-path:hover { fill: #e9c46a; }
+  .country-path.target { fill: #4a3520; stroke: var(--gold); stroke-width: 1.5; }
+  .country-path.correct { fill: #2d6a4f; stroke: #52b788; stroke-width: 1.2; }
+  .country-path.wrong { fill: #7b1a1a; stroke: #ef9a9a; stroke-width: 1.2; }
+  .country-path.skipped { fill: #7a6248; stroke: #b08968; stroke-width: 1; }
+
+  .map-tooltip {
+    position: absolute;
+    background: rgba(26,15,0,0.95);
+    border: 1px solid rgba(201,168,76,0.4);
+    color: var(--sand);
+    font-size: 0.75rem;
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+    z-index: 10;
+    letter-spacing: 0.04em;
+  }
+
+  .result-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(10,7,2,0.92);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.4s;
+    backdrop-filter: blur(6px);
+  }
+
+  .result-overlay.show { opacity: 1; pointer-events: all; }
+
+  .result-card {
+    background: #1e1408;
+    border: 1px solid rgba(201,168,76,0.35);
+    border-radius: 20px;
+    padding: 2.5rem 3rem;
+    text-align: center;
+    max-width: 420px;
+    width: 90%;
+    transform: scale(0.85);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .result-overlay.show .result-card { transform: scale(1); }
+
+  .result-icon { font-size: 3.5rem; margin-bottom: 1rem; }
+
+  .result-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--gold-light);
+    margin-bottom: 0.5rem;
+  }
+
+  .result-score {
+    font-family: 'Playfair Display', serif;
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--sand);
+    margin: 0.75rem 0;
+  }
+
+  .result-sub { font-size: 0.85rem; color: #a08060; margin-bottom: 1.5rem; }
+
+  .result-btn {
+    padding: 0.8rem 2rem;
+    border-radius: 10px;
+    background: rgba(201,168,76,0.15);
+    border: 1px solid rgba(201,168,76,0.4);
+    color: var(--gold-light);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .result-btn:hover { background: rgba(201,168,76,0.3); }
+
+  .map-legend {
+    display: flex; gap: 0.75rem; flex-wrap: wrap;
+    padding: 0.6rem 1rem;
+    background: rgba(0,0,0,0.2);
+    border-top: 1px solid rgba(201,168,76,0.1);
+  }
+
+  .legend-item {
+    display: flex; align-items: center; gap: 0.35rem;
+    font-size: 0.7rem; color: #a08060;
+  }
+
+  .legend-swatch {
+    width: 12px; height: 12px; border-radius: 3px;
+  }
+
+  .mode-tabs {
+    display: flex; gap: 0.4rem; margin-bottom: 1rem;
+  }
+
+  .mode-tab {
+    flex: 1; padding: 0.4rem;
+    border-radius: 6px;
+    border: 1px solid rgba(201,168,76,0.15);
+    background: transparent;
+    color: #a08060;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .mode-tab.active {
+    background: rgba(201,168,76,0.15);
+    border-color: rgba(201,168,76,0.4);
+    color: var(--gold-light);
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-texture"></div>
+
+<div class="app">
+  <header>
+    <h1>Africa Map Quiz</h1>
+    <p>54 Nations · Click the Highlighted Country</p>
+  </header>
+
+  <div class="main-layout">
+    <div class="quiz-panel">
+      <div class="mode-tabs">
+        <button class="mode-tab active" onclick="setMode('sequential')">Order</button>
+        <button class="mode-tab" onclick="setMode('random')">Random</button>
+        <button class="mode-tab" onclick="setMode('timed')">Timed</button>
+      </div>
+
+      <div class="score-row">
+        <div class="stat-box">
+          <span class="label">Score</span>
+          <span class="value" id="score">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="label">Streak</span>
+          <span class="value" id="streak">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="label">Left</span>
+          <span class="value" id="left">54</span>
+        </div>
+      </div>
+
+      <div class="timer-bar-wrap" id="timer-wrap" style="display:none">
+        <div class="timer-bar" id="timer-bar" style="width:100%"></div>
+      </div>
+
+      <div class="question-area">
+        <div class="question-label">Find this country</div>
+        <div class="country-name" id="country-name">Loading map…</div>
+        <div class="hint-text" id="hint-text"></div>
+      </div>
+
+      <div class="feedback idle" id="feedback">Click a country on the map</div>
+
+      <div class="btn-row">
+        <button class="btn" onclick="skipCountry()">Skip</button>
+        <button class="btn" onclick="showHint()">Hint</button>
+        <button class="btn primary" onclick="restartQuiz()">Restart</button>
+      </div>
+
+      <div class="progress-list" id="progress-list"></div>
+    </div>
+
+    <div class="map-container">
+      <svg id="africa-svg" viewBox="0 0 560 620" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="map-tooltip" id="tooltip"></div>
+      <div class="map-legend">
+        <div class="legend-item"><div class="legend-swatch" style="background:#6b4c2a"></div>Unvisited</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#4a3520;border:1px solid #c9a84c"></div>Target</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#2d6a4f"></div>Correct</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#7b1a1a"></div>Wrong</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#7a6248"></div>Skipped</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="result-overlay" id="result-overlay">
+  <div class="result-card">
+    <div class="result-icon" id="result-icon">🌍</div>
+    <div class="result-title">Quiz Complete!</div>
+    <div class="result-score" id="result-score">0/54</div>
+    <div class="result-sub" id="result-sub">Keep exploring Africa!</div>
+    <button class="result-btn" onclick="restartQuiz()">Play Again</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script>
+const AFRICA_IDS = new Set([
+  12,24,204,72,854,108,120,140,148,174,178,180,262,818,226,232,231,
+  266,270,288,324,624,384,404,426,430,434,450,454,466,478,480,504,
+  508,516,562,566,646,678,686,694,706,710,728,729,748,834,768,788,
+  800,732,894,716,706
+]);
+
+const COUNTRY_NAMES = {
+  12:'Algeria',24:'Angola',204:'Benin',72:'Botswana',854:'Burkina Faso',
+  108:'Burundi',120:'Cameroon',140:'Central African Republic',148:'Chad',
+  174:'Comoros',178:'Republic of Congo',180:'DR Congo',262:'Djibouti',
+  818:'Egypt',226:'Equatorial Guinea',232:'Eritrea',231:'Ethiopia',
+  266:'Gabon',270:'Gambia',288:'Ghana',324:'Guinea',624:'Guinea-Bissau',
+  384:"Côte d'Ivoire",404:'Kenya',426:'Lesotho',430:'Liberia',434:'Libya',
+  450:'Madagascar',454:'Malawi',466:'Mali',478:'Mauritania',480:'Mauritius',
+  504:'Morocco',508:'Mozambique',516:'Namibia',562:'Niger',566:'Nigeria',
+  646:'Rwanda',686:'Senegal',694:'Sierra Leone',706:'Somalia',710:'South Africa',
+  728:'South Sudan',729:'Sudan',748:'Eswatini',834:'Tanzania',768:'Togo',
+  788:'Tunisia',800:'Uganda',732:'Western Sahara',894:'Zambia',716:'Zimbabwe',
+  678:'São Tomé & Príncipe'
+};
+
+const CAPITAL_HINTS = {
+  12:'Capital: Algiers',24:'Capital: Luanda',204:'Capital: Porto-Novo',
+  72:'Capital: Gaborone',854:'Capital: Ouagadougou',108:'Capital: Gitega',
+  120:'Capital: Yaoundé',140:'Capital: Bangui',148:'Capital: N\'Djamena',
+  174:'Capital: Moroni',178:'Capital: Brazzaville',180:'Capital: Kinshasa',
+  262:'Capital: Djibouti City',818:'Capital: Cairo',226:'Capital: Malabo',
+  232:'Capital: Asmara',231:'Capital: Addis Ababa',266:'Capital: Libreville',
+  270:'Capital: Banjul',288:'Capital: Accra',324:'Capital: Conakry',
+  624:'Capital: Bissau',384:'Capital: Yamoussoukro',404:'Capital: Nairobi',
+  426:'Capital: Maseru',430:'Capital: Monrovia',434:'Capital: Tripoli',
+  450:'Capital: Antananarivo',454:'Capital: Lilongwe',466:'Capital: Bamako',
+  478:'Capital: Nouakchott',480:'Capital: Port Louis',504:'Capital: Rabat',
+  508:'Capital: Maputo',516:'Capital: Windhoek',562:'Capital: Niamey',
+  566:'Capital: Abuja',646:'Capital: Kigali',686:'Capital: Dakar',
+  694:'Capital: Freetown',706:'Capital: Mogadishu',710:'Capital: Pretoria',
+  728:'Capital: Juba',729:'Capital: Khartoum',748:'Capital: Mbabane',
+  834:'Capital: Dodoma',768:'Capital: Lomé',788:'Capital: Tunis',
+  800:'Capital: Kampala',732:'Capital: El Aaiún',894:'Capital: Lusaka',
+  716:'Capital: Harare',678:'Capital: São Tomé'
+};
+
+let countries = [];
+let questionOrder = [];
+let currentIdx = 0;
+let score = 0;
+let streak = 0;
+let answered = false;
+let mode = 'sequential';
+let timer = null;
+let timeLeft = 15;
+let progressLog = [];
+let mapLoaded = false;
+
+const svg = d3.select('#africa-svg');
+const tooltip = document.getElementById('tooltip');
+
+async function loadMap() {
+  try {
+    const world = await d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+    const allCountries = topojson.feature(world, world.objects.countries).features;
+    countries = allCountries.filter(f => AFRICA_IDS.has(+f.id) && COUNTRY_NAMES[+f.id]);
+
+    const projection = d3.geoMercator()
+      .center([25, 0])
+      .scale(420)
+      .translate([280, 310]);
+
+    const path = d3.geoPath().projection(projection);
+
+    svg.selectAll('path')
+      .data(countries)
+      .enter()
+      .append('path')
+      .attr('class', 'country-path')
+      .attr('id', d => 'c' + d.id)
+      .attr('d', path)
+      .on('mouseover', function(event, d) {
+        const name = COUNTRY_NAMES[+d.id] || 'Unknown';
+        tooltip.textContent = name;
+        tooltip.style.opacity = '1';
+        tooltip.style.left = (event.offsetX + 12) + 'px';
+        tooltip.style.top = (event.offsetY - 28) + 'px';
+      })
+      .on('mousemove', function(event) {
+        tooltip.style.left = (event.offsetX + 12) + 'px';
+        tooltip.style.top = (event.offsetY - 28) + 'px';
+      })
+      .on('mouseleave', function() {
+        tooltip.style.opacity = '0';
+      })
+      .on('click', function(event, d) {
+        handleCountryClick(+d.id);
+      });
+
+    mapLoaded = true;
+    startQuiz();
+  } catch(e) {
+    document.getElementById('country-name').textContent = 'Map load failed';
+    console.error(e);
+  }
+}
+
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.mode-tab').forEach((t,i) => {
+    t.classList.toggle('active', ['sequential','random','timed'][i] === m);
+  });
+  document.getElementById('timer-wrap').style.display = m === 'timed' ? 'block' : 'none';
+  restartQuiz();
+}
+
+function startQuiz() {
+  score = 0; streak = 0; currentIdx = 0; progressLog = [];
+  document.getElementById('score').textContent = '0';
+  document.getElementById('streak').textContent = '0';
+  document.getElementById('progress-list').innerHTML = '';
+
+  svg.selectAll('.country-path')
+    .attr('class', 'country-path');
+
+  questionOrder = countries.map(c => +c.id);
+  if (mode === 'random' || mode === 'timed') {
+    for (let i = questionOrder.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i+1));
+      [questionOrder[i], questionOrder[j]] = [questionOrder[j], questionOrder[i]];
+    }
+  }
+  updateLeft();
+  showQuestion();
+}
+
+function showQuestion() {
+  if (currentIdx >= questionOrder.length) { endQuiz(); return; }
+  answered = false;
+  clearFeedback();
+  document.getElementById('hint-text').classList.remove('show');
+  document.getElementById('hint-text').textContent = '';
+
+  const id = questionOrder[currentIdx];
+  const name = COUNTRY_NAMES[id];
+  document.getElementById('country-name').textContent = name;
+
+  svg.selectAll('.country-path').each(function(d) {
+    const el = d3.select(this);
+    const cls = el.attr('class');
+    if (!cls.includes('correct') && !cls.includes('wrong') && !cls.includes('skipped')) {
+      el.attr('class', +d.id === id ? 'country-path target' : 'country-path');
+    }
+  });
+
+  if (mode === 'timed') startTimer();
+}
+
+function startTimer() {
+  clearInterval(timer);
+  timeLeft = 15;
+  updateTimerBar();
+  timer = setInterval(() => {
+    timeLeft--;
+    updateTimerBar();
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      skipCountry();
+    }
+  }, 1000);
+}
+
+function updateTimerBar() {
+  const bar = document.getElementById('timer-bar');
+  const pct = (timeLeft / 15) * 100;
+  bar.style.width = pct + '%';
+  bar.className = 'timer-bar' + (timeLeft <= 5 ? ' danger' : '');
+}
+
+function handleCountryClick(id) {
+  if (answered) return;
+  const targetId = questionOrder[currentIdx];
+
+  if (id === targetId) {
+    answered = true;
+    clearInterval(timer);
+    score++;
+    streak++;
+    document.getElementById('score').textContent = score;
+    document.getElementById('streak').textContent = streak;
+    d3.select('#c' + id).attr('class', 'country-path correct');
+    showFeedback('correct', '✓ Correct! +1 point' + (streak >= 3 ? ` 🔥 ${streak} streak!` : ''));
+    logProgress(id, 'correct');
+    updateLeft();
+    setTimeout(showQuestion, 1000);
+  } else {
+    answered = true;
+    clearInterval(timer);
+    streak = 0;
+    document.getElementById('streak').textContent = 
